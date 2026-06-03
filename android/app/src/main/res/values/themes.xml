@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主题与配色全部在 Compose 中定义，这里只提供一个无 ActionBar 的承载主题 -->
+    <style name="Theme.InfoPulse" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#0F1115</item>
+        <item name="android:navigationBarColor">#12141A</item>
+        <item name="android:windowBackground">#0F1115</item>
+    </style>
+</resources>
