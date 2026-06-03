@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>测试科技源</title>
+    <item>
+      <title>DeepSeek 开源新一代推理模型 R-Next</title>
+      <link>https://example.com/a1</link>
+      <description>&lt;p&gt;深度求索发布 R 系列升级版，参数量 671B。&lt;/p&gt;</description>
+      <pubDate>Mon, 02 Jun 2026 10:00:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>比亚迪 5 月新能源销量再创新高</title>
+      <link>https://example.com/a2</link>
+      <description>比亚迪公布产销快报，新能源销量同比增长。</description>
+      <pubDate>Mon, 02 Jun 2026 09:30:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>本地天气：明日多云转晴</title>
+      <link>https://example.com/a3</link>
+      <description>与科技无关的新闻，用于验证关键词过滤。</description>
+      <pubDate>Mon, 02 Jun 2026 08:00:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>Claude 更新（这是前天的旧闻，应被日期过滤掉）</title>
+      <link>https://example.com/a4</link>
+      <description>Anthropic 更新 Claude。</description>
+      <pubDate>Sat, 31 May 2026 12:00:00 +0800</pubDate>
+    </item>
+  </channel>
+</rss>
