@@ -6,12 +6,12 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 from infopulse import clean, rss
 from infopulse.config import load_config
+from infopulse.tz import get_tz
 
-TZ = ZoneInfo("Asia/Shanghai")
+TZ = get_tz("Asia/Shanghai")
 TARGET = date(2026, 6, 2)
 
 

@@ -3,16 +3,15 @@ from __future__ import annotations
 import re
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import date, datetime
+from datetime import date, datetime, tzinfo
 from email.utils import parsedate_to_datetime
-from zoneinfo import ZoneInfo
 
 from .models import NewsItem
 from .settings import settings
+from .tz import UTC as _UTC
 
 UA = "Mozilla/5.0 (InfoPulse RSS Reader)"
 ATOM = "{http://www.w3.org/2005/Atom}"
-_UTC = ZoneInfo("UTC")
 
 
 def _fetch(url: str) -> bytes:
@@ -31,7 +30,7 @@ def _strip_html(s: str) -> str:
     return s[:400]
 
 
-def _parse_date(s: str, tz: ZoneInfo) -> date | None:
+def _parse_date(s: str, tz: tzinfo) -> date | None:
     """解析 RSS 的 RFC822 或 Atom 的 ISO8601 时间，转成目标时区下的日期。"""
     s = (s or "").strip()
     if not s:
@@ -51,7 +50,7 @@ def _parse_date(s: str, tz: ZoneInfo) -> date | None:
     return dt.astimezone(tz).date()
 
 
-def parse_feed(content: bytes, source_default: str, tz: ZoneInfo) -> list[NewsItem]:
+def parse_feed(content: bytes, source_default: str, tz: tzinfo) -> list[NewsItem]:
     """解析 RSS 或 Atom 内容为 NewsItem 列表（标准库实现）。"""
     items: list[NewsItem] = []
     try:
@@ -91,7 +90,7 @@ def parse_feed(content: bytes, source_default: str, tz: ZoneInfo) -> list[NewsIt
     return items
 
 
-def fetch_all(feeds: list[tuple[str, str]], tz: ZoneInfo) -> list[NewsItem]:
+def fetch_all(feeds: list[tuple[str, str]], tz: tzinfo) -> list[NewsItem]:
     """抓取并解析所有源；单个源失败不影响其它源。"""
     out: list[NewsItem] = []
     for name, url in feeds:

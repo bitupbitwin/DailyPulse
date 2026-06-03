@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from . import clean, deepseek, prompts, rss
 from .config import load_config
 from .models import Category, CategoryResult, NewsItem
 from .settings import settings
+from .tz import get_tz
 
 
 def _raw_markdown(cat: Category, items: list[NewsItem], target: date) -> str:
@@ -41,7 +41,7 @@ def generate(
     返回 (target_date, [CategoryResult])。
     items_override 用于测试：直接传入新闻列表，跳过网络抓取。
     """
-    tz = ZoneInfo(settings.timezone)
+    tz = get_tz(settings.timezone)
     today = datetime.now(tz).date()
     if target_date is None:
         target_date = today - timedelta(days=1)
