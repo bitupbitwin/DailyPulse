@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>资讯脉搏 InfoPulse · UI 预览原型</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#1a1d24; --card2:#21252e; --line:#2b2f3a;
+    --text:#e8eaed; --sub:#9aa0aa; --accent:#3b82f6; --accent2:#22c55e;
+    --warn:#f59e0b; --pill:#262b35;
+  }
+  *{box-sizing:border-box; -webkit-font-smoothing:antialiased;}
+  body{margin:0; background:#06070a; color:var(--text);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",Roboto,Helvetica,sans-serif;}
+  .stage{min-height:100vh; padding:28px 20px 60px; display:flex; flex-direction:column; align-items:center; gap:22px;}
+  .controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;}
+  .controls h1{font-size:16px; margin:0 12px 0 0; font-weight:600; letter-spacing:.5px;}
+  .controls .tip{color:var(--sub); font-size:12px; width:100%; text-align:center; margin-top:4px;}
+  .seg{display:inline-flex; background:#13151b; border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .seg button{background:transparent; color:var(--sub); border:0; padding:8px 16px; font-size:13px; cursor:pointer;}
+  .seg button.on{background:var(--accent); color:#fff;}
+
+  /* ----- 设备外框 ----- */
+  .device{background:#000; border-radius:38px; padding:12px; box-shadow:0 30px 80px rgba(0,0,0,.6);}
+  .phone{width:390px;} .phone .screen{height:780px;}
+  .tablet{width:1024px; border-radius:26px; padding:14px;} .tablet .screen{height:720px;}
+  .screen{background:var(--bg); border-radius:28px; overflow:hidden; display:flex; flex-direction:column; position:relative;}
+  .tablet .screen{border-radius:16px;}
+
+  /* ----- 顶部栏 ----- */
+  .appbar{padding:16px 18px 12px; border-bottom:1px solid var(--line); flex:none;}
+  .appbar .row{display:flex; justify-content:space-between; align-items:center;}
+  .brand{font-size:18px; font-weight:700;} .brand small{color:var(--accent); font-weight:600; font-size:11px; margin-left:6px;}
+  .date{color:var(--sub); font-size:12px; text-align:right; line-height:1.5;}
+  .banner{margin-top:10px; background:rgba(245,158,11,.12); color:#fcd34d; font-size:11.5px;
+    padding:7px 10px; border-radius:8px; border:1px solid rgba(245,158,11,.25);}
+
+  /* ----- 分类 Tabs (手机) ----- */
+  .tabs{display:flex; gap:8px; padding:12px 14px; overflow-x:auto; flex:none; border-bottom:1px solid var(--line);}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{white-space:nowrap; background:var(--pill); color:var(--sub); border:1px solid var(--line);
+    padding:7px 14px; border-radius:20px; font-size:13px; cursor:pointer;}
+  .tab.on{background:var(--accent); color:#fff; border-color:var(--accent);}
+
+  /* ----- 内容区 ----- */
+  .body{flex:1; overflow-y:auto;}
+  .body::-webkit-scrollbar{width:6px;} .body::-webkit-scrollbar-thumb{background:#2b2f3a; border-radius:3px;}
+  .sec-title{font-size:13px; color:var(--sub); padding:14px 16px 6px;}
+
+  .card{background:var(--card); margin:10px 14px; border:1px solid var(--line); border-radius:14px; padding:14px; cursor:pointer; transition:.15s;}
+  .card:hover{border-color:var(--accent);}
+  .card .pill{display:inline-block; background:var(--card2); color:#cbd5e1; font-size:11px; padding:3px 9px; border-radius:6px; margin-bottom:8px;}
+  .card h3{margin:0 0 6px; font-size:15px; line-height:1.45;}
+  .card .meta{color:var(--sub); font-size:11.5px; margin-bottom:8px;}
+  .card .txt{color:#c3c8d2; font-size:13px; line-height:1.6;}
+  .card .extra{margin-top:8px; color:#86efac; font-size:12px;}
+  .card .src{margin-top:9px; color:var(--accent); font-size:12px;}
+
+  /* 看板卡片(概览) */
+  .ov{background:var(--card); margin:12px 14px; border:1px solid var(--line); border-radius:16px; padding:16px; cursor:pointer;}
+  .ov:hover{border-color:var(--accent);}
+  .ov .top{display:flex; align-items:center; gap:10px;}
+  .ov .ic{font-size:22px;} .ov .nm{font-size:16px; font-weight:600; flex:1;}
+  .ov .badge{font-size:11px; color:var(--accent2); background:rgba(34,197,94,.12); padding:3px 8px; border-radius:10px;}
+  .ov .sm{color:var(--sub); font-size:13px; margin-top:8px; line-height:1.5;}
+  .ov .cnt{color:var(--sub); font-size:11.5px; margin-top:10px;}
+
+  /* ----- 底部导航 (手机) ----- */
+  .nav{display:flex; border-top:1px solid var(--line); flex:none; background:#12141a;}
+  .nav div{flex:1; text-align:center; padding:9px 0 11px; color:var(--sub); font-size:11px; cursor:pointer;}
+  .nav div.on{color:var(--accent);} .nav .i{font-size:18px; display:block; margin-bottom:2px;}
+
+  /* ----- 平板：左侧栏 + List-Detail 双栏 ----- */
+  .tabletwrap{display:flex; height:100%;}
+  .rail{width:88px; background:#12141a; border-right:1px solid var(--line); flex:none; padding-top:14px;}
+  .rail .it{text-align:center; padding:14px 4px; color:var(--sub); font-size:11px; cursor:pointer; border-left:3px solid transparent;}
+  .rail .it.on{color:var(--accent); border-left-color:var(--accent); background:rgba(59,130,246,.08);}
+  .rail .it .i{font-size:20px; display:block; margin-bottom:4px;}
+  .listcol{width:330px; border-right:1px solid var(--line); flex:none; display:flex; flex-direction:column;}
+  .detailcol{flex:1; display:flex; flex-direction:column;}
+  .colhead{padding:14px 16px; border-bottom:1px solid var(--line); font-weight:600; font-size:15px; flex:none;}
+  .colhead small{color:var(--sub); font-weight:400; font-size:12px; display:block; margin-top:3px;}
+  .listitem{padding:13px 16px; border-bottom:1px solid var(--line); cursor:pointer;}
+  .listitem:hover{background:#171a21;} .listitem.on{background:rgba(59,130,246,.10);}
+  .listitem .pill{font-size:10.5px; color:#cbd5e1; background:var(--card2); padding:2px 7px; border-radius:5px;}
+  .listitem h4{margin:7px 0 4px; font-size:13.5px; line-height:1.45;}
+  .listitem .meta{color:var(--sub); font-size:11px;}
+
+  .detailbody{flex:1; overflow-y:auto; padding:8px 4px 30px;}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="controls">
+    <h1>📱 资讯脉搏 InfoPulse · UI 预览原型</h1>
+    <div class="seg" id="seg">
+      <button data-d="phone" class="on">📱 手机</button>
+      <button data-d="tablet">📐 平板</button>
+    </div>
+    <div class="tip">本地占位数据（mock）· 仅用于查看界面效果 · 真实新闻由后端接口替换</div>
+  </div>
+  <div id="mount"></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+const M = window.MOCK;
+let device = "phone";
+let activeCat = 0;
+let activeItem = 0;
+let view = "dashboard"; // dashboard | category | detail (phone)
+
+function card(it){
+  return `<div class="card">
+    <span class="pill">${it.tag}</span>
+    <h3>📰 ${it.title}</h3>
+    <div class="meta">来源：${it.media}　|　日期：${it.date}</div>
+    <div class="txt">${it.content}</div>
+    <div class="extra">${it.extra}</div>
+    <div class="src">查看原文 ›</div>
+  </div>`;
+}
+
+function appbar(){
+  return `<div class="appbar">
+    <div class="row">
+      <div class="brand">资讯脉搏<small>InfoPulse</small></div>
+      <div class="date">📅 ${M.reportDate} · ${M.weekday}<br>生成：${M.generatedAt}</div>
+    </div>
+    <div class="banner">⚠️ 本报告仅收录 ${M.reportDate} 当日发布的新闻，无新闻的板块已自动省略</div>
+  </div>`;
+}
+
+/* ---------------- 手机 ---------------- */
+function renderPhone(){
+  let inner = "";
+  if(view==="dashboard"){
+    inner = `<div class="sec-title">今日各领域简报</div>` +
+      M.categories.map((c,i)=>`
+        <div class="ov" onclick="openCat(${i})">
+          <div class="top"><span class="ic">${c.icon}</span>
+            <span class="nm">${c.name}</span>
+            <span class="badge">已更新</span></div>
+          <div class="sm">${c.summary}</div>
+          <div class="cnt">${c.items.length} 条 · ${M.reportDate} · 点击查看 ›</div>
+        </div>`).join("");
+    return `<div class="screen">${appbar()}<div class="body">${inner}</div>${nav("home")}</div>`;
+  }
+  if(view==="category"){
+    const c = M.categories[activeCat];
+    const tabs = `<div class="tabs">`+M.categories.map((x,i)=>
+      `<div class="tab ${i===activeCat?'on':''}" onclick="openCat(${i})">${x.icon} ${x.name}</div>`).join("")+`</div>`;
+    inner = `<div class="sec-title">【${c.name}】 ${M.reportDate} 动态简报</div>`+ c.items.map(card).join("");
+    return `<div class="screen">${appbar()}${tabs}<div class="body">${inner}</div>${nav("home")}</div>`;
+  }
+}
+function nav(on){
+  const items=[["home","🏠","看板"],["sub","⚙️","订阅配置"],["me","👤","我的"]];
+  return `<div class="nav">`+items.map(x=>
+    `<div class="${x[0]===on?'on':''}"><span class="i">${x[1]}</span>${x[2]}</div>`).join("")+`</div>`;
+}
+
+/* ---------------- 平板：侧栏 + 双栏 ---------------- */
+function renderTablet(){
+  const rail = `<div class="rail">`+M.categories.map((c,i)=>
+    `<div class="it ${i===activeCat?'on':''}" onclick="selCat(${i})"><span class="i">${c.icon}</span>${c.name}</div>`).join("")
+    + `<div class="it"><span class="i">⚙️</span>配置</div>`+`</div>`;
+  const c = M.categories[activeCat];
+  const list = `<div class="listcol">
+      <div class="colhead">${c.icon} ${c.name}<small>${M.reportDate} · ${c.items.length} 条</small></div>
+      <div class="body">`+ c.items.map((it,i)=>`
+        <div class="listitem ${i===activeItem?'on':''}" onclick="selItem(${i})">
+          <span class="pill">${it.tag}</span>
+          <h4>${it.title}</h4>
+          <div class="meta">${it.media} · ${it.date}</div>
+        </div>`).join("") +`</div></div>`;
+  const it = c.items[activeItem];
+  const detail = `<div class="detailcol">
+      <div class="colhead">简报详情<small>来源：${it.media} | 日期：${it.date}</small></div>
+      <div class="detailbody">${card(it)}
+        <div class="card" style="border-style:dashed;cursor:default">
+          <div class="txt">💬 想深入了解这条？可在此基于本篇素材继续追问（二期功能）。</div>
+        </div>
+      </div></div>`;
+  return `<div class="screen"><div class="tabletwrap">${rail}${list}${detail}</div></div>`;
+}
+
+/* ---------------- 控制 ---------------- */
+function openCat(i){ activeCat=i; view="category"; draw(); }
+function selCat(i){ activeCat=i; activeItem=0; draw(); }
+function selItem(i){ activeItem=i; draw(); }
+
+function draw(){
+  const mount=document.getElementById("mount");
+  if(device==="phone"){
+    mount.innerHTML = `<div class="device phone">${renderPhone()}</div>`;
+  }else{
+    mount.innerHTML = `<div class="device tablet">${renderTablet()}</div>`;
+  }
+}
+document.getElementById("seg").addEventListener("click",e=>{
+  if(e.target.dataset.d){
+    device=e.target.dataset.d;
+    [...document.querySelectorAll("#seg button")].forEach(b=>b.classList.toggle("on",b.dataset.d===device));
+    if(device==="phone"){view="dashboard";}
+    draw();
+  }
+});
+draw();
+</script>
+</body>
+</html>

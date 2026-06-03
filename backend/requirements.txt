@@ -1,0 +1,6 @@
+# 资讯脉搏 后端依赖（尽量少）：
+# - PyYAML：解析分类配置文件
+# - tzdata：为 Windows 提供时区数据库（zoneinfo 在 Windows 上需要它）。
+#           即使不装，代码也会回退到内置 UTC+8，但建议安装以支持任意时区。
+PyYAML>=6.0
+tzdata>=2024.1
