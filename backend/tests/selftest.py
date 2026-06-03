@@ -39,11 +39,24 @@ def main() -> None:
     # HTML 已被清洗
     assert "<p>" not in ai[0].summary
 
+    # 扩展性：分类专属源（owners）——把"天气"那条所在的源指给一个无关键词命中的新类，
+    # 它应被直接归入（验证不靠关键词也能纳入专属源新闻）。
+    from infopulse.models import Category
+    weather_item = next(it for it in items if "天气" in it.title)
+    weather_item.feed_url = "https://feed.weather/rss"
+    sports = Category(id="cat_sports", name="本地资讯", icon="📰", keywords=[],
+                      feeds=[("天气源", "https://feed.weather/rss")])
+    owners = {"https://feed.weather/rss": {"cat_sports"}}
+    owned = clean.select_for_category(items, sports, TARGET, 25, owners)
+    assert len(owned) == 1 and "天气" in owned[0].title, \
+        f"专属源应直接归入 1 条，实际 {[x.title for x in owned]}"
+
     print("✅ 自测通过：")
     print(f"   - RSS 解析 4 条，日期过滤后 3 条（旧闻已剔除）")
     print(f"   - AI 大模型 命中：{ai[0].title}")
     print(f"   - 新能源车企 命中：{ev[0].title}")
     print(f"   - 互联网大厂 命中：0 条（天气新闻被关键词过滤）")
+    print(f"   - 分类专属源：无关键词也能纳入专属源新闻（扩展性 OK）")
 
 
 if __name__ == "__main__":

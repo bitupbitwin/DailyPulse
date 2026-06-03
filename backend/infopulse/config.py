@@ -21,6 +21,11 @@ def load_config(path: Path | None = None) -> tuple[list[tuple[str, str]], list[C
 
     categories: list[Category] = []
     for c in data.get("categories", []) or []:
+        cat_feeds: list[tuple[str, str]] = []
+        for f in c.get("feeds", []) or []:
+            url = (f.get("url") or "").strip()
+            if url:
+                cat_feeds.append((f.get("name", url), url))
         categories.append(
             Category(
                 id=c["id"],
@@ -28,6 +33,7 @@ def load_config(path: Path | None = None) -> tuple[list[tuple[str, str]], list[C
                 icon=c.get("icon", ""),
                 keywords=[str(k) for k in c.get("keywords", [])],
                 output_format=c.get("output_format"),
+                feeds=cat_feeds,
             )
         )
     return feeds, categories

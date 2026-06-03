@@ -96,7 +96,10 @@ def fetch_all(feeds: list[tuple[str, str]], tz: ZoneInfo) -> list[NewsItem]:
     out: list[NewsItem] = []
     for name, url in feeds:
         try:
-            out.extend(parse_feed(_fetch(url), name, tz))
+            items = parse_feed(_fetch(url), name, tz)
+            for it in items:
+                it.feed_url = url  # 标记来源 RSS，供分类专属源归属
+            out.extend(items)
         except Exception as e:  # noqa: BLE001 — 抓取失败仅告警，不中断
             print(f"[warn] 抓取失败 {name} ({url}): {e}")
     return out

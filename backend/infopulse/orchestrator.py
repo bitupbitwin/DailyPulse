@@ -46,12 +46,29 @@ def generate(
     if target_date is None:
         target_date = today - timedelta(days=1)
 
-    feeds, categories = load_config()
-    all_items = items_override if items_override is not None else rss.fetch_all(feeds, tz)
+    global_feeds, categories = load_config()
+
+    # 汇总所有唯一 RSS 源（全局 + 各分类专属），每个 URL 只抓一次；
+    # 记录 owners：哪些分类“拥有”某个专属源。
+    unique_feeds: dict[str, str] = {}   # url -> name
+    owners: dict[str, set[str]] = {}    # url -> {category_id}
+    for name, url in global_feeds:
+        unique_feeds.setdefault(url, name)
+    for cat in categories:
+        for name, url in cat.feeds:
+            unique_feeds.setdefault(url, name)
+            owners.setdefault(url, set()).add(cat.id)
+
+    if items_override is not None:
+        all_items = items_override
+    else:
+        all_items = rss.fetch_all([(n, u) for u, n in unique_feeds.items()], tz)
 
     results: list[CategoryResult] = []
     for cat in categories:
-        sel = clean.select_for_category(all_items, cat, target_date, settings.max_items_per_category)
+        sel = clean.select_for_category(
+            all_items, cat, target_date, settings.max_items_per_category, owners
+        )
         result = CategoryResult(category=cat, items=sel)
         if not sel:
             result.status = "empty"
