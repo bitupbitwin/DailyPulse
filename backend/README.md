@@ -17,6 +17,14 @@ cp .env.example .env
 # 编辑 .env，把 DEEPSEEK_API_KEY 改成你自己的 key（platform.deepseek.com 申请）
 ```
 
+> **Windows（CMD）** 用 `copy` 代替 `cp`，用 `notepad` 编辑：
+> ```cmd
+> pip install -r requirements.txt
+> copy .env.example .env
+> notepad .env
+> ```
+> 提示：先跑 `--no-llm`（下方）不需要配 key，可直接验证抓取效果。
+
 ## 二、每天早晨运行
 
 ```bash
