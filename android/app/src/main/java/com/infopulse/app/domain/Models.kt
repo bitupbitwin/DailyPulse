@@ -17,6 +17,8 @@ data class Category(
     val icon: String,
     val summary: String,
     val items: List<NewsItem>,
+    val markdown: String = "",   // AI 提炼后的简报全文（Markdown）；mock 数据留空
+    val status: String = "ready", // ready | empty | failed | running
 )
 
 /** 一次简报快照（某个目标日期、各分类） */

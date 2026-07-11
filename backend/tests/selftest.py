@@ -10,12 +10,14 @@ from pathlib import Path
 from infopulse import clean, rss
 from infopulse.config import load_config
 from infopulse.tz import get_tz
+from infopulse.util import ensure_utf8_stdout
 
 TZ = get_tz("Asia/Shanghai")
 TARGET = date(2026, 6, 2)
 
 
 def main() -> None:
+    ensure_utf8_stdout()
     sample = (Path(__file__).parent / "sample_feed.xml").read_bytes()
     items = rss.parse_feed(sample, "测试源", TZ)
     assert len(items) == 4, f"应解析出 4 条，实际 {len(items)}"

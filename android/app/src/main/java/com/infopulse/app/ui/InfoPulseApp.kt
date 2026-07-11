@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -33,6 +35,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.infopulse.app.data.MockData
 import com.infopulse.app.domain.Briefing
 import com.infopulse.app.domain.Category
@@ -60,28 +65,93 @@ import com.infopulse.app.ui.theme.NavBg
 import com.infopulse.app.ui.theme.SubText
 import com.infopulse.app.ui.theme.TextMain
 
-/** 应用入口：根据屏幕宽度自动选择手机 / 平板布局 */
+/** 应用入口：根据屏幕宽度自动选择手机 / 平板布局，数据由 ViewModel 从后端拉取。 */
 @Composable
-fun InfoPulseApp(windowSizeClass: WindowSizeClass) {
-    val briefing = MockData.briefing
+fun InfoPulseApp(
+    windowSizeClass: WindowSizeClass,
+    vm: BriefingViewModel = viewModel(),
+) {
+    val briefing by vm.briefing.collectAsState()
+    val isLoading by vm.isLoading.collectAsState()
+    val isRefreshing by vm.isRefreshing.collectAsState()
+    val error by vm.error.collectAsState()
+
+    LaunchedEffect(Unit) { vm.loadBriefing() }
+
+    // 后端不可用时回退到 MockData，保证界面始终有内容
+    val usingMock = briefing == null
+    val display = briefing ?: MockData.briefing
+
     Surface(Modifier.fillMaxSize(), color = Bg) {
-        if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact) {
-            PhoneLayout(briefing)
-        } else {
-            TabletLayout(briefing)
+        when {
+            usingMock && isLoading -> LoadingScreen()
+            windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact ->
+                PhoneLayout(display, isRefreshing, usingMock, error) { vm.refreshAll() }
+            else -> TabletLayout(display, isRefreshing) { vm.refreshAll() }
         }
+    }
+}
+
+@Composable
+private fun LoadingScreen() {
+    Column(
+        Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.height(160.dp))
+        CircularProgressIndicator(color = Accent)
+        Spacer(Modifier.height(16.dp))
+        Text("正在加载今日简报…", color = SubText, fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun MockBanner(error: String? = null) {
+    val msg = if (error.isNullOrBlank()) {
+        "⚠️ 未连接后端，当前显示的是示例数据。请确认后端已启动，再点右下角刷新。"
+    } else {
+        "⚠️ 后端连接失败（$error），当前显示示例数据。请确认后端已启动后点刷新。"
+    }
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .background(Color(0x22F59E0B), RoundedCornerShape(10.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Text(msg, color = BodyText, fontSize = 12.sp, lineHeight = 18.sp)
     }
 }
 
 /* ----------------------------- 手机布局 ----------------------------- */
 
 @Composable
-private fun PhoneLayout(briefing: Briefing) {
+private fun PhoneLayout(
+    briefing: Briefing,
+    isRefreshing: Boolean = false,
+    usingMock: Boolean = false,
+    error: String? = null,
+    onRefresh: () -> Unit = {},
+) {
     var tab by remember { mutableIntStateOf(0) }        // 0=看板 1=配置 2=我的
     var openedCat by remember { mutableIntStateOf(-1) }  // -1=看板首页
 
     Scaffold(
         containerColor = Bg,
+        floatingActionButton = {
+            if (tab == 0) {
+                FloatingActionButton(
+                    onClick = { if (!isRefreshing) onRefresh() },
+                    containerColor = Accent,
+                ) {
+                    if (isRefreshing) {
+                        CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.width(20.dp))
+                    } else {
+                        Text("🔄", fontSize = 18.sp)
+                    }
+                }
+            }
+        },
         bottomBar = {
             NavigationBar(containerColor = NavBg) {
                 val entries = listOf("🏠" to "看板", "⚙️" to "订阅配置", "👤" to "我的")
@@ -107,6 +177,7 @@ private fun PhoneLayout(briefing: Briefing) {
             when (tab) {
                 0 -> {
                     AppHeader(briefing)
+                    if (usingMock) MockBanner(error)
                     if (openedCat < 0) {
                         DashboardList(briefing.categories) { openedCat = it }
                     } else {
@@ -228,11 +299,19 @@ private fun Placeholder(title: String, desc: String) {
 /* ----------------------------- 平板布局 ----------------------------- */
 
 @Composable
-private fun TabletLayout(briefing: Briefing) {
+private fun TabletLayout(
+    briefing: Briefing,
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
+) {
     var selCat by remember { mutableIntStateOf(0) }
     var selItem by remember { mutableIntStateOf(0) }
     val categories = briefing.categories
-    val cat = categories[selCat]
+    if (categories.isEmpty()) {
+        Placeholder("暂无分类", "后端未返回分类数据，请检查配置或点击刷新。")
+        return
+    }
+    val cat = categories[selCat.coerceIn(0, categories.size - 1)]
 
     Row(Modifier.fillMaxSize()) {
         // 左侧导航栏
@@ -255,6 +334,12 @@ private fun TabletLayout(briefing: Briefing) {
             }
             NavigationRailItem(
                 selected = false,
+                onClick = { if (!isRefreshing) onRefresh() },
+                icon = { Text(if (isRefreshing) "⏳" else "🔄", fontSize = 20.sp) },
+                label = { Text("刷新", fontSize = 10.sp) },
+            )
+            NavigationRailItem(
+                selected = false,
                 onClick = {},
                 icon = { Text("⚙️", fontSize = 20.sp) },
                 label = { Text("配置", fontSize = 10.sp) },
@@ -273,9 +358,20 @@ private fun TabletLayout(briefing: Briefing) {
             }
         }
 
-        // 右侧：简报详情
-        val current = cat.items[selItem]
+        // 右侧：简报详情（分类可能无当日新闻，做空态兜底避免越界）
+        val safeItem = selItem.coerceIn(0, (cat.items.size - 1).coerceAtLeast(0))
+        val current = cat.items.getOrNull(safeItem)
         Column(Modifier.weight(1f).fillMaxHeight().background(Bg)) {
+            if (current == null) {
+                ColumnHeader("简报详情", "${cat.name} · 今日暂无符合条件的新闻")
+                HorizontalDivider(color = Line)
+                Text(
+                    "📭 今日该领域暂无符合条件的新闻",
+                    color = SubText, fontSize = 13.sp,
+                    modifier = Modifier.padding(16.dp),
+                )
+                return@Column
+            }
             ColumnHeader("简报详情", "来源：${current.media} | 日期：${current.date}")
             HorizontalDivider(color = Line)
             Column(

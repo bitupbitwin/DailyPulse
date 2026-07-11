@@ -8,3 +8,4 @@ fastapi>=0.115.0
 uvicorn>=0.32.0
 aiosqlite>=0.20.0
 python-multipart>=0.0.18
+apscheduler>=3.10.0

@@ -12,18 +12,33 @@ Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host "  InfoPulse App - All-in-One Runner" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
 
-# 1. Run Python Backend News Generator
-Write-Host "[1/5] Running Python Backend News Generator..." -ForegroundColor Yellow
+# 1. Start FastAPI backend (uvicorn) in the background so the App can fetch real data.
+#    Emulator reaches the host via 10.0.2.2:8000 (see ApiClient.kt).
+Write-Host "[1/5] Starting FastAPI backend (uvicorn) on :8000 ..." -ForegroundColor Yellow
 Push-Location backend
-python -m infopulse.generate
-$backendResult = $LASTEXITCODE
+Start-Process -FilePath "python" `
+    -ArgumentList "-m","uvicorn","infopulse.api.main:app","--host","0.0.0.0","--port","8000" `
+    -WindowStyle Minimized
 Pop-Location
 
-if ($backendResult -ne 0) {
-    Write-Host "Warning: Backend news generator failed (Exit code: $backendResult)." -ForegroundColor Magenta
-    Write-Host "Continuing to launch the Android App with mock data..." -ForegroundColor Magenta
+Write-Host "Waiting for backend to come up..." -ForegroundColor Magenta
+$ready = $false
+for ($i = 0; $i -lt 20; $i++) {
+    try {
+        $r = Invoke-WebRequest -Uri "http://localhost:8000/api/v1/categories" -UseBasicParsing -TimeoutSec 3
+        if ($r.StatusCode -eq 200) { $ready = $true; break }
+    } catch { Start-Sleep -Seconds 1 }
+}
+if ($ready) {
+    Write-Host "Backend is up. Seeding latest briefing for cat_ai..." -ForegroundColor Green
+    try {
+        Invoke-RestMethod -Uri "http://localhost:8000/api/v1/categories/cat_ai/refresh" `
+            -Method Post -ContentType "application/json" -Body "{}" | Out-Null
+    } catch {
+        Write-Host "Seed refresh failed (App still launches; pull-to-refresh in app)." -ForegroundColor Magenta
+    }
 } else {
-    Write-Host "Backend news generation completed successfully!" -ForegroundColor Green
+    Write-Host "Backend not ready in time; App will fall back to mock data." -ForegroundColor Magenta
 }
 
 # 2. Check if ADB works & Start emulator if needed

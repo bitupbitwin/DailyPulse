@@ -1,17 +1,21 @@
 from __future__ import annotations
 
+import json
 import re
 import uuid
 from dataclasses import asdict
 from datetime import date
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from ..config import load_config
 from ..db import get_briefing, get_latest_briefing, sync_categories
 from ..orchestrator import generate_async
+from .auth import verify_token
 from .schemas import (
+    AskRequest,
+    AskResponse,
     BriefingResponse,
     CategoryResponse,
     NewsItemResponse,
@@ -20,7 +24,7 @@ from .schemas import (
     TaskStatusResponse,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_token)])
 _tasks: dict[str, dict[str, Any]] = {}
 
 
@@ -87,6 +91,49 @@ async def get_task_status(task_id: str) -> TaskStatusResponse:
         status=task["status"],
         error=task.get("error"),
     )
+
+
+@router.post("/categories/{cat_id}/ask", response_model=AskResponse)
+async def ask_follow_up(cat_id: str, req: AskRequest) -> AskResponse:
+    """基于某分类某日简报已检索的素材追问（RAG）。"""
+    import asyncio
+
+    from ..deepseek import DeepSeekError, chat
+    from ..settings import settings
+
+    _find_category(cat_id)
+    question = (req.question or "").strip()
+    if not question:
+        raise HTTPException(status_code=422, detail="question 不能为空")
+
+    if req.date:
+        row = await get_briefing(cat_id, req.date)
+    else:
+        rows = await get_latest_briefing(cat_id, 1)
+        row = rows[0] if rows else None
+    if row is None:
+        raise HTTPException(status_code=404, detail="该分类暂无简报，无法追问")
+
+    sources = row.get("sources", [])
+    material = json.dumps(
+        {"briefing": row.get("content_markdown", ""), "sources": sources},
+        ensure_ascii=False,
+    )
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "你是资讯助手。只能依据【素材】中的简报与来源回答用户问题，"
+                "不得使用素材外信息，不得编造；素材中没有的就直说不知道。全程中文。"
+            ),
+        },
+        {"role": "user", "content": f"【素材】\n{material}\n\n【问题】\n{question}"},
+    ]
+    try:
+        answer = await asyncio.to_thread(chat, messages)
+    except DeepSeekError as exc:
+        raise HTTPException(status_code=502, detail=f"追问失败：{exc}") from exc
+    return AskResponse(answer=answer, model=settings.deepseek_model)
 
 
 async def _run_refresh_task(

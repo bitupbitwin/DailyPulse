@@ -51,3 +51,13 @@ class SourceItem(BaseModel):
     media: str
     url: str
     published_at: str
+
+
+class AskRequest(BaseModel):
+    question: str
+    date: str | None = None  # 针对某日简报追问；默认最新
+
+
+class AskResponse(BaseModel):
+    answer: str
+    model: str = ""

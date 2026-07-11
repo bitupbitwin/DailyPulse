@@ -51,9 +51,14 @@ class BochaProvider:
         target_date: date,
         max_results: int,
     ) -> list[NewsItem]:
+        # 检索时间窗默认对齐目标日期（T-1 当天）；博查支持传具体日期。
+        # 若某些账号/版本对日期格式要求不同，可用环境变量 BOCHA_FRESHNESS 覆盖
+        # （如 "oneDay" / "oneWeek"）。无论窗口多大，下面 _bocha_to_news 都会按
+        # 目标日期做代码层硬过滤，保证只保留当天新闻。
+        freshness = settings.bocha_freshness or target_date.isoformat()
         payload = {
             "query": query,
-            "freshness": "oneDay",
+            "freshness": freshness,
             "count": max_results,
         }
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -150,13 +155,16 @@ def _bocha_to_news(raw: dict[str, Any], target_date: date) -> NewsItem | None:
     published = _parse_bocha_date(
         str(
             raw.get("date")
+            or raw.get("dateLastCrawled")
             or raw.get("published_at")
             or raw.get("publishedAt")
-            or raw.get("displayUrl")
+            or raw.get("datePublished")
             or ""
         )
     )
-    if published is not None and published != target_date:
+    # 日期硬过滤（对应开发说明书 §8.1）：解析不到日期、或日期≠目标日期的条目一律丢弃，
+    # 绝不把无日期结果当作目标日期收录（此前的 bug）。
+    if published is None or published != target_date:
         return None
 
     summary = str(raw.get("summary") or raw.get("snippet") or raw.get("description") or "")
@@ -165,7 +173,7 @@ def _bocha_to_news(raw: dict[str, Any], target_date: date) -> NewsItem | None:
         title=title,
         url=url,
         source=source or "Bocha",
-        published=published or target_date,
+        published=published,
         summary=summary.strip()[:400],
         feed_url="bocha://web-search",
     )

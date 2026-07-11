@@ -13,9 +13,11 @@ from pathlib import Path
 
 from .orchestrator import generate
 from .settings import BASE_DIR
+from .util import ensure_utf8_stdout
 
 
 def main() -> None:
+    ensure_utf8_stdout()
     parser = argparse.ArgumentParser(description="资讯脉搏 · 每日简报生成（RSS + DeepSeek）")
     parser.add_argument("--date", help="目标日期 YYYY-MM-DD（默认昨天）")
     parser.add_argument("--no-llm", action="store_true",
