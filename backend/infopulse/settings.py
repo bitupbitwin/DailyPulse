@@ -25,6 +25,8 @@ class Settings:
         self.deepseek_api_key = os.environ.get("DEEPSEEK_API_KEY", "")
         self.deepseek_base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
         self.deepseek_model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+        self.bocha_api_key = os.environ.get("BOCHA_API_KEY", "")
+        self.bocha_base_url = os.environ.get("BOCHA_BASE_URL", "https://api.bochaai.com/v1")
         self.timezone = os.environ.get("TIMEZONE", "Asia/Shanghai")
         self.max_items_per_category = int(os.environ.get("MAX_ITEMS_PER_CATEGORY", "25"))
         self.http_timeout = int(os.environ.get("HTTP_TIMEOUT", "20"))

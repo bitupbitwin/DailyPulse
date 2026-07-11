@@ -4,3 +4,7 @@
 #           即使不装，代码也会回退到内置 UTC+8，但建议安装以支持任意时区。
 PyYAML>=6.0
 tzdata>=2024.1
+fastapi>=0.115.0
+uvicorn>=0.32.0
+aiosqlite>=0.20.0
+python-multipart>=0.0.18
